@@ -1,6 +1,6 @@
-FROM alpine:3.7
+FROM alpine:3.12.1
 
-MAINTAINER tapxxor theofanis.pispirigkos@gmail.com
+LABEL author="tapxxor theofanis.pispirigkos@gmail.com"
 
 ENV SERVER_NAME webdav.kube-system.svc.cluster.local 
 ENV DAV_CONF /etc/apache2/conf.d/dav.conf
@@ -16,7 +16,7 @@ RUN set -x \
     && adduser -u 82 -D -S -G www-data www-data
 
 # add webdav and apache
-RUN apk add --no-cache apache2-webdav=2.4.29-r1 apache2-utils=2.4.29-r1
+RUN apk add --no-cache apache2-webdav apache2-utils
 
 # create the upload folder
 RUN mkdir -p /uploads     \
