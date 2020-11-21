@@ -1,0 +1,52 @@
+name: Docker Build/Publish Image 
+on:  
+  push:    
+    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'     
+        required: true
+        default: 'warning'
+      tags:
+        required: false
+        description: 'Test scenario tags'      
+jobs:   
+  build:    
+    runs-on: ubuntu-18.04    
+    env:      
+      DOCKER_REGISTRY: ghcr.io/pokebadgerswithspoon/webdav
+      DOCKER_IMAGE: pokebadgerswithspoon/webdav
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}  
+      DOCKER_TARGET_PLATFORM: linux/arm/v7,linux/arm64/v8,linux/amd64
+    steps:    
+    - name: Checkout the code       
+      uses: actions/checkout@v1
+
+    - name: Set up Docker Buildx      
+      uses: crazy-max/ghaction-docker-buildx@v1      
+      with:        
+        version: latest
+        
+    - name: Prepare      
+      if: success()      
+      id: prepare      
+      run: |        
+        echo ::set-output name=docker_platform::${DOCKER_TARGET_PLATFORM}        
+        echo ::set-output name=docker_image::${DOCKER_REGISTRY}/${DOCKER_IMAGE}        
+        echo ::set-output name=version::${GITHUB_RUN_NUMBER}
+        
+    - name: Docker Login      
+      if: success()      
+      run: |        
+        echo "${DOCKER_PASSWORD}" | docker login ${DOCKER_REGISTRY} --username "${DOCKER_USERNAME}" --password-stdin              
+        
+    - name: Run Buildx (push image)      
+      if: success()      
+      run: |        
+        docker buildx build \
+          --platform ${{ steps.prepare.outputs.docker_platform }} \
+          --tag ${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }} \
+          --file ./Dockerfile \
+          --output type=image,push=true .
