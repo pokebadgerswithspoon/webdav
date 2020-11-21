@@ -1,6 +1,6 @@
-FROM alpine:3.7
+FROM alpine:3.12.1
 
-MAINTAINER tapxxor theofanis.pispirigkos@gmail.com
+LABEL author="tapxxor theofanis.pispirigkos@gmail.com"
 
 ENV SERVER_NAME webdav.kube-system.svc.cluster.local 
 ENV DAV_CONF /etc/apache2/conf.d/dav.conf
