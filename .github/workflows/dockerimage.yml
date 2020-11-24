@@ -39,4 +39,3 @@ jobs:
         tags: |
           ghcr.io/${{ github.repository }}:${{ env.IMAGE_VERSION }}
           ghcr.io/${{ github.repository }}:latest
-          
