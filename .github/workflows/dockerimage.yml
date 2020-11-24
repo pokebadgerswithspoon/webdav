@@ -1,52 +1,41 @@
 name: Docker Build/Publish Image 
 on:  
-  push:    
-    branches: [ master ]
   workflow_dispatch:
     inputs:
-      logLevel:
-        description: 'Log level'     
+      arch:
+        description: 'Architectures'
         required: true
-        default: 'warning'
-      tags:
-        required: false
-        description: 'Test scenario tags'      
+        default: 'linux/arm/v7,linux/amd64'
+env:
+  IMAGE_VERSION: 1.0.${{ github.run_number }}
+
 jobs:   
   build:    
-    runs-on: ubuntu-18.04    
-    env:      
-      DOCKER_REGISTRY: ghcr.io/pokebadgerswithspoon/webdav
-      DOCKER_IMAGE: pokebadgerswithspoon/webdav
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}  
-      DOCKER_TARGET_PLATFORM: linux/arm/v7,linux/arm64/v8,linux/amd64
+    runs-on: ubuntu-latest
+
     steps:    
     - name: Checkout the code       
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2
 
-    - name: Set up Docker Buildx      
-      uses: crazy-max/ghaction-docker-buildx@v1      
-      with:        
-        version: latest
-        
-    - name: Prepare      
-      if: success()      
-      id: prepare      
-      run: |        
-        echo ::set-output name=docker_platform::${DOCKER_TARGET_PLATFORM}        
-        echo ::set-output name=docker_image::${DOCKER_REGISTRY}/${DOCKER_IMAGE}        
-        echo ::set-output name=version::${GITHUB_RUN_NUMBER}
-        
-    - name: Docker Login      
-      if: success()      
-      run: |        
-        echo "${DOCKER_PASSWORD}" | docker login ${DOCKER_REGISTRY} --username "${DOCKER_USERNAME}" --password-stdin              
-        
-    - name: Run Buildx (push image)      
-      if: success()      
-      run: |        
-        docker buildx build \
-          --platform ${{ steps.prepare.outputs.docker_platform }} \
-          --tag ${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }} \
-          --file ./Dockerfile \
-          --output type=image,push=true .
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1    
+
+    - name: Login in to registry
+      uses: docker/login-action@v1.6.0
+      with:
+        registry: ghcr.io
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Push to registry
+      uses: docker/build-push-action@v2.2.0
+      with:
+        push: true
+        platforms: ${{ github.event.inputs.arch }}
+          # tags: <org-name>/<repo-name>/<app-name>:${{ env.IMAGE_TAG }}
+        tags: |
+          ghcr.io/${{ github.repository }}:${{ env.IMAGE_VERSION }}
+          ghcr.io/${{ github.repository }}:latest
